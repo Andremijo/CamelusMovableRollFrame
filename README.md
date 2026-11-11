@@ -5,11 +5,18 @@ Written for the 3.3.5 (WotLK) client. It also has a TOC file for WotLK Classic.
 
 ## Install
 
-1. Download the repository (Code → Download ZIP) and unzip it.
-2. Rename the folder to exactly `CamelusMovableRollFrame`. GitHub calls it `CamelusMovableRollFrame-main`, and WoW only loads the addon if the folder name matches the `.toc` file.
-3. Put the folder in `World of Warcraft\Interface\AddOns\`, so you get
+1. Go to [Releases](../../releases/latest) and download **CamelusMovableRollFrame-Forever.zip**.
+2. Unzip it into `World of Warcraft\Interface\AddOns\`, so you get
    `Interface\AddOns\CamelusMovableRollFrame\CamelusMovableRollFrame.toc`.
-4. Restart the game and make sure "Camelus' Movable Roll Frame" is ticked in the AddOns list.
+3. Restart the game and make sure "Camelus' Movable Roll Frame" is ticked in the AddOns list.
+
+(If you use Code → Download ZIP instead, rename the folder from `CamelusMovableRollFrame-main` to `CamelusMovableRollFrame`. WoW only loads the addon if the folder name matches the `.toc` file.)
+
+## Making a new release
+
+1. Update `## Version:` in both `.toc` files.
+2. On GitHub, go to Releases → "Draft a new release", create a new tag such as `v1.1`, and publish.
+3. A minute later, GitHub has built `CamelusMovableRollFrame-Forever.zip` and attached it to the release.
 
 ## Use
 

@@ -14,9 +14,10 @@ Written for the 3.3.5 (WotLK) client. It also has a TOC file for WotLK Classic.
 
 ## Making a new release
 
-1. Update `## Version:` in both `.toc` files.
-2. On GitHub, go to Releases → "Draft a new release", create a new tag such as `v1.1`, and publish.
-3. A minute later, GitHub has built `CamelusMovableRollFrame-Forever.zip` and attached it to the release.
+1. Change `## Version:` in both `.toc` files, for example to `1.1`, and push to `main`.
+2. A minute later, GitHub has created release `v1.1` with `CamelusMovableRollFrame-Forever.zip` attached.
+
+Pushes that don't change the version don't create a release.
 
 ## Use
 

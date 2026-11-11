@@ -1,18 +1,23 @@
 # Builds CamelusMovableRollFrame-Forever.zip and attaches it to a GitHub release.
-# Runs when a version tag (e.g. v1.1) is pushed, or when a release is published on GitHub.
+#
+# - Push to main: if the "## Version:" in the .toc file has no release yet
+#   (e.g. Version 1.1 -> release v1.1), the release is created with the zip.
+# - Release published on GitHub by hand: the zip is built and attached to it.
+# - Run by hand from the Actions tab: same as a push to main.
 name: Release
 
 on:
   push:
-    tags: ["v*"]
+    branches: [main]
   release:
     types: [published]
+  workflow_dispatch:
 
 permissions:
   contents: write
 
 concurrency:
-  group: release-${{ github.ref_name }}
+  group: release
 
 jobs:
   release:
@@ -20,19 +25,40 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Work out the release tag
+        id: tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            TAG="${{ github.ref_name }}"
+          else
+            VERSION=$(grep '^## Version:' CamelusMovableRollFrame.toc | sed 's/^## Version:[[:space:]]*//' | tr -d '\r[:space:]')
+            if [ -z "$VERSION" ]; then echo "No ## Version: in CamelusMovableRollFrame.toc"; exit 1; fi
+            TAG="v$VERSION"
+            if gh release view "$TAG" >/dev/null 2>&1; then
+              echo "Release $TAG already exists. Bump ## Version: in the .toc files to make a new one."
+              TAG=""
+            fi
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
       - name: Build zip
+        if: steps.tag.outputs.tag != ''
         run: |
           mkdir -p build/CamelusMovableRollFrame
           cp CamelusMovableRollFrame.lua CamelusMovableRollFrame.toc CamelusMovableRollFrame_Wrath.toc README.md build/CamelusMovableRollFrame/
           cd build && zip -r ../CamelusMovableRollFrame-Forever.zip CamelusMovableRollFrame
 
-      - name: Attach zip to release
+      - name: Create release and attach zip
+        if: steps.tag.outputs.tag != ''
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ github.ref_name }}
+          TAG: ${{ steps.tag.outputs.tag }}
         run: |
           if ! gh release view "$TAG" >/dev/null 2>&1; then
-            gh release create "$TAG" --title "Camelus' Movable Roll Frame $TAG" \
+            gh release create "$TAG" --target "$GITHUB_SHA" \
+              --title "Camelus' Movable Roll Frame $TAG" \
               --notes "Download **CamelusMovableRollFrame-Forever.zip** below and unzip it into \`World of Warcraft\\Interface\\AddOns\\\`."
           fi
           gh release upload "$TAG" CamelusMovableRollFrame-Forever.zip --clobber

@@ -1,7 +1,0 @@
-## Interface: 30403
-## Title: Camelus' Movable Roll Frame
-## Notes: Makes the Need/Greed roll window movable. /rollmove
-## Version: 1.0
-## SavedVariables: CamelusMovableRollFrameDB
-
-CamelusMovableRollFrame.lua

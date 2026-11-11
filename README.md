@@ -1,23 +1,17 @@
+<img src="media/icon.png" width="96" align="right" alt="Camelus' Movable Roll Frame icon">
+
 # Camelus' Movable Roll Frame
 
-A small World of Warcraft addon that makes the Need / Greed / Pass roll window movable.
-Written for the 3.3.5 (WotLK) client. It also has a TOC file for WotLK Classic.
+A small addon for **WoW Forever** that makes the Need / Greed / Pass roll window movable.
 
 ## Install
 
 1. Go to [Releases](../../releases/latest) and download **CamelusMovableRollFrame-Forever.zip**.
-2. Unzip it into `World of Warcraft\Interface\AddOns\`, so you get
+2. Unzip it into your game's `Interface\AddOns\` folder, so you get
    `Interface\AddOns\CamelusMovableRollFrame\CamelusMovableRollFrame.toc`.
 3. Restart the game and make sure "Camelus' Movable Roll Frame" is ticked in the AddOns list.
 
 (If you use Code → Download ZIP instead, rename the folder from `CamelusMovableRollFrame-main` to `CamelusMovableRollFrame`. WoW only loads the addon if the folder name matches the `.toc` file.)
-
-## Making a new release
-
-1. Change `## Version:` in both `.toc` files, for example to `1.1`, and push to `main`.
-2. A minute later, GitHub has created release `v1.1` with `CamelusMovableRollFrame-Forever.zip` attached.
-
-Pushes that don't change the version don't create a release.
 
 ## Use
 
@@ -31,3 +25,11 @@ Pushes that don't change the version don't create a release.
 The position is saved per character.
 
 When several items drop at once, the extra roll windows stack on top of the first one as usual.
+Loot toasts ("You received ...") that appear while a roll is up stack above the roll windows, wherever you put them.
+
+## Making a new release
+
+1. Change `## Version:` in `CamelusMovableRollFrame.toc`, for example to `1.2`, and push to `main`.
+2. A minute later, GitHub has created release `v1.2` with `CamelusMovableRollFrame-Forever.zip` and `release.json` attached.
+
+Pushes that don't change the version don't create a release.

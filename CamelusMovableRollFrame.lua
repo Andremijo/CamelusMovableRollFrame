@@ -1,26 +1,37 @@
 -- Camelus' Movable Roll Frame
--- Makes the Need / Greed / Pass roll window movable.
+-- Makes the Need / Greed / Pass roll window movable. Written for WoW Forever.
 --
 --   Shift + left-drag on a roll window   -> move it while a roll is up
 --   /rollmove                            -> show/hide a drag handle (works with no roll up)
---   /rollmove reset                      -> back to the default spot
+--   /rollmove reset                      -> back to the default spot and size
 --   /rollmove scale 1.2                  -> make the roll windows bigger/smaller (0.5 - 2)
+--
+-- How the default UI works (WoW Forever, Blizzard_UIPanels_Game/Mainline/GroupLootFrame):
+-- GroupLootFrame1-4 are children of UIParent. GroupLootContainer stacks them, each one
+-- centred at container BOTTOM + reservedSize * (i - 0.5). The container itself is
+-- placed by BottomManagedFrameContainer (a layout frame) every time it is shown.
+-- We pin the container to our own anchor again after every SetPoint, and scale the
+-- roll frames themselves (they are not children of the container, so scaling the
+-- container alone would not scale them).
+--
+-- Taint: no fields are written on Blizzard frames, and no Blizzard function is replaced.
 
 local ADDON_NAME = "CamelusMovableRollFrame"
 local DEFAULTS = { point = "BOTTOM", relPoint = "BOTTOM", x = 0, y = 200, scale = 1 }
+local NUM_ROLL_FRAMES = 4
 
 local db
 local unlocked = false
 local applying = false
+local baseWidth, baseHeight = 277, 100
 
 local function Print(msg)
     DEFAULT_CHAT_FRAME:AddMessage("|cff33ccffCamelus' Movable Roll Frame|r: " .. msg)
 end
 
--- Our own invisible anchor. The roll window is pinned to it, and we move the anchor.
+-- Our own anchor. The roll window is pinned to it, and the player moves the anchor.
 local anchor = CreateFrame("Frame", "CamelusMovableRollFrameAnchor", UIParent)
-anchor:SetWidth(280)
-anchor:SetHeight(70)
+anchor:SetSize(baseWidth, baseHeight)
 anchor:SetFrameStrata("DIALOG")
 anchor:SetMovable(true)
 anchor:SetClampedToScreen(true)
@@ -28,11 +39,7 @@ anchor:EnableMouse(false)
 
 local overlay = anchor:CreateTexture(nil, "OVERLAY")
 overlay:SetAllPoints(anchor)
-if overlay.SetColorTexture then
-    overlay:SetColorTexture(0, 0.6, 1, 0.4)
-else
-    overlay:SetTexture(0, 0.6, 1, 0.4)
-end
+overlay:SetColorTexture(0, 0.6, 1, 0.4)
 overlay:Hide()
 
 local label = anchor:CreateFontString(nil, "OVERLAY", "GameFontNormal")
@@ -40,16 +47,24 @@ label:SetPoint("CENTER", anchor, "CENTER", 0, 0)
 label:SetText("Roll window\nDrag me, then type /rollmove to lock")
 label:Hide()
 
--- Newer clients put all roll windows in GroupLootContainer; 3.3.5 stacks
--- GroupLootFrame2-4 on top of GroupLootFrame1. Either way we move the bottom one.
+-- WoW Forever stacks the roll windows in GroupLootContainer. Older clients have
+-- no container and stack GroupLootFrame2-4 on GroupLootFrame1.
 local function GetTarget()
     return GroupLootContainer or GroupLootFrame1
+end
+
+local function ForEachRollFrame(fn)
+    for i = 1, NUM_ROLL_FRAMES do
+        local frame = _G["GroupLootFrame" .. i]
+        if frame then fn(frame) end
+    end
 end
 
 local function PlaceAnchor()
     anchor:ClearAllPoints()
     anchor:SetPoint(db.point, UIParent, db.relPoint, db.x, db.y)
-    anchor:SetScale(db.scale)
+    -- The anchor is sized, not scaled, so its saved position stays put when the scale changes.
+    anchor:SetSize(baseWidth * db.scale, baseHeight * db.scale)
 end
 
 local function AttachTarget()
@@ -58,8 +73,13 @@ local function AttachTarget()
     applying = true
     target:ClearAllPoints()
     target:SetPoint("BOTTOM", anchor, "BOTTOM", 0, 0)
-    target:SetScale(db.scale)
     applying = false
+end
+
+local function ApplyScale()
+    ForEachRollFrame(function(frame) frame:SetScale(db.scale) end)
+    -- Scale the container too, so its height (which the loot toasts stack on) matches.
+    if GroupLootContainer then GroupLootContainer:SetScale(db.scale) end
 end
 
 local function SavePosition()
@@ -104,35 +124,37 @@ local function SetUnlocked(value)
 end
 
 local function Setup()
-    local sample = GroupLootFrame1
-    if sample and sample:GetWidth() > 0 then
-        anchor:SetWidth(sample:GetWidth())
-        anchor:SetHeight(sample:GetHeight())
-    end
-
-    PlaceAnchor()
-
     local target = GetTarget()
     if not target then
         Print("could not find the roll window in this game version.")
         return
     end
 
-    -- Whenever the default UI tries to put the roll window back, pin it to our anchor again.
+    -- Size the drag box like the first roll window and the space it gets in the stack.
+    local sample = GroupLootFrame1
+    if sample and sample:GetWidth() > 0 then
+        baseWidth = sample:GetWidth()
+        baseHeight = sample:GetHeight()
+    end
+    if GroupLootContainer and type(GroupLootContainer.reservedSize) == "number" then
+        baseHeight = GroupLootContainer.reservedSize
+    end
+
+    PlaceAnchor()
+
+    -- Whenever the default UI places the roll window, pin it to our anchor again.
     hooksecurefunc(target, "SetPoint", function()
         if not applying then AttachTarget() end
     end)
     AttachTarget()
+    ApplyScale()
 
     -- Shift + drag on the roll windows themselves.
-    for i = 1, (NUM_GROUP_LOOT_FRAMES or 4) do
-        local frame = _G["GroupLootFrame" .. i]
-        if frame then
-            frame:EnableMouse(true)
-            frame:HookScript("OnMouseDown", StartDrag)
-            frame:HookScript("OnMouseUp", StopDrag)
-        end
-    end
+    ForEachRollFrame(function(frame)
+        frame:EnableMouse(true)
+        frame:HookScript("OnMouseDown", StartDrag)
+        frame:HookScript("OnMouseUp", StopDrag)
+    end)
 end
 
 anchor:RegisterEvent("ADDON_LOADED")
@@ -144,6 +166,7 @@ anchor:SetScript("OnEvent", function(self, event, name)
         for k, v in pairs(DEFAULTS) do
             if db[k] == nil then db[k] = v end
         end
+        self:UnregisterEvent("ADDON_LOADED")
     elseif event == "PLAYER_LOGIN" then
         Setup()
     end
@@ -155,18 +178,17 @@ SlashCmdList["CAMELUSMOVABLEROLLFRAME"] = function(msg)
     msg = string.lower(msg or "")
     local cmd, arg = string.match(msg, "^%s*(%S*)%s*(.-)%s*$")
 
-    if cmd == "" or cmd == "lock" or cmd == "unlock" then
-        if cmd == "lock" then
-            SetUnlocked(false)
-        elseif cmd == "unlock" then
-            SetUnlocked(true)
-        else
-            SetUnlocked(not unlocked)
-        end
+    if cmd == "" then
+        SetUnlocked(not unlocked)
+    elseif cmd == "unlock" then
+        SetUnlocked(true)
+    elseif cmd == "lock" then
+        SetUnlocked(false)
     elseif cmd == "reset" then
         for k, v in pairs(DEFAULTS) do db[k] = v end
         PlaceAnchor()
         AttachTarget()
+        ApplyScale()
         Print("position and size reset.")
     elseif cmd == "scale" then
         local value = tonumber(arg)
@@ -174,6 +196,7 @@ SlashCmdList["CAMELUSMOVABLEROLLFRAME"] = function(msg)
             db.scale = value
             PlaceAnchor()
             AttachTarget()
+            ApplyScale()
             Print("scale set to " .. value .. ".")
         else
             Print("use a number between 0.5 and 2, e.g. /rollmove scale 1.2")

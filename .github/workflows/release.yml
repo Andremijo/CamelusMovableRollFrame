@@ -47,8 +47,33 @@ jobs:
         if: steps.tag.outputs.tag != ''
         run: |
           mkdir -p build/CamelusMovableRollFrame
-          cp CamelusMovableRollFrame.lua CamelusMovableRollFrame.toc CamelusMovableRollFrame_Wrath.toc README.md build/CamelusMovableRollFrame/
+          cp CamelusMovableRollFrame.lua CamelusMovableRollFrame.toc CamelusMovableRollFrame.tga README.md build/CamelusMovableRollFrame/
           cd build && zip -r ../CamelusMovableRollFrame-Forever.zip CamelusMovableRollFrame
+
+      # release.json tells addon managers such as WoWUp which game client the zip
+      # is for ("forever" = WoW Forever), in the same format as the BigWigs packager.
+      - name: Write release.json
+        if: steps.tag.outputs.tag != ''
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          INTERFACE=$(sed -n 's/^## Interface: *//p' CamelusMovableRollFrame.toc | tr -d '\r' | cut -d, -f1 | tr -d ' ')
+          cat > release.json <<JSON
+          {
+            "releases": [
+              {
+                "name": "Camelus' Movable Roll Frame",
+                "version": "$TAG",
+                "filename": "CamelusMovableRollFrame-Forever.zip",
+                "nolib": false,
+                "metadata": [
+                  { "flavor": "forever", "interface": $INTERFACE }
+                ]
+              }
+            ]
+          }
+          JSON
+          python3 -m json.tool release.json
 
       - name: Create release and attach zip
         if: steps.tag.outputs.tag != ''
@@ -59,6 +84,6 @@ jobs:
           if ! gh release view "$TAG" >/dev/null 2>&1; then
             gh release create "$TAG" --target "$GITHUB_SHA" \
               --title "Camelus' Movable Roll Frame $TAG" \
-              --notes "Download **CamelusMovableRollFrame-Forever.zip** below and unzip it into \`World of Warcraft\\Interface\\AddOns\\\`."
+              --notes "For WoW Forever. Download **CamelusMovableRollFrame-Forever.zip** below and unzip it into your game's \`Interface\\AddOns\\\` folder. Then restart the game and type \`/rollmove\`."
           fi
-          gh release upload "$TAG" CamelusMovableRollFrame-Forever.zip --clobber
+          gh release upload "$TAG" CamelusMovableRollFrame-Forever.zip release.json --clobber

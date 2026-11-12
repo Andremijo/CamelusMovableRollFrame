@@ -30,22 +30,27 @@ local function Print(msg)
 end
 
 -- Our own anchor. The roll window is pinned to it, and the player moves the anchor.
+-- The anchor never handles the mouse: it has no mouse scripts, so it can never sit
+-- invisibly on top of other windows and swallow their clicks.
 local anchor = CreateFrame("Frame", "CamelusMovableRollFrameAnchor", UIParent)
 anchor:SetSize(baseWidth, baseHeight)
-anchor:SetFrameStrata("DIALOG")
 anchor:SetMovable(true)
 anchor:SetClampedToScreen(true)
-anchor:EnableMouse(false)
 
-local overlay = anchor:CreateTexture(nil, "OVERLAY")
-overlay:SetAllPoints(anchor)
+-- The blue drag box shown by /rollmove. It is a separate frame that is hidden
+-- whenever the addon is locked, and a hidden frame never catches clicks.
+local mover = CreateFrame("Frame", nil, anchor)
+mover:SetAllPoints(anchor)
+mover:SetFrameStrata("DIALOG")
+mover:Hide()
+
+local overlay = mover:CreateTexture(nil, "OVERLAY")
+overlay:SetAllPoints(mover)
 overlay:SetColorTexture(0, 0.6, 1, 0.4)
-overlay:Hide()
 
-local label = anchor:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-label:SetPoint("CENTER", anchor, "CENTER", 0, 0)
+local label = mover:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+label:SetPoint("CENTER", mover, "CENTER", 0, 0)
 label:SetText("Roll window\nDrag me, then type /rollmove to lock")
-label:Hide()
 
 -- WoW Forever stacks the roll windows in GroupLootContainer. Older clients have
 -- no container and stack GroupLootFrame2-4 on GroupLootFrame1.
@@ -87,38 +92,37 @@ local function SavePosition()
     db.point, db.relPoint, db.x, db.y = point, relPoint, x, y
 end
 
+local dragging = false
+
 local function StartDrag(self, button)
     if button == "LeftButton" and (unlocked or IsShiftKeyDown()) then
         anchor:StartMoving()
-        anchor.isDragging = true
+        dragging = true
     end
 end
 
 local function StopDrag()
-    if anchor.isDragging then
+    if dragging then
+        dragging = false
         anchor:StopMovingOrSizing()
         anchor:SetUserPlaced(false)
-        anchor.isDragging = nil
         SavePosition()
         AttachTarget()
     end
 end
 
-anchor:SetScript("OnMouseDown", StartDrag)
-anchor:SetScript("OnMouseUp", StopDrag)
-anchor:SetScript("OnHide", StopDrag)
+mover:SetScript("OnMouseDown", StartDrag)
+mover:SetScript("OnMouseUp", StopDrag)
+mover:SetScript("OnHide", StopDrag)
 
 local function SetUnlocked(value)
     unlocked = value
-    anchor:EnableMouse(value)
     if value then
-        overlay:Show()
-        label:Show()
+        mover:Show()
         Print("unlocked. Drag the blue box, then type /rollmove again to lock.")
     else
         StopDrag()
-        overlay:Hide()
-        label:Hide()
+        mover:Hide()
         Print("locked. Tip: Shift + drag moves a roll window while it is up.")
     end
 end

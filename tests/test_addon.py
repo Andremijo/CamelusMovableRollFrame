@@ -29,10 +29,26 @@ function Frame:ClearAllPoints() self.points = {} end
 function Frame:SetPoint(...) self.points = self.points or {}; table.insert(self.points, {...}) end
 function Frame:GetPoint() local p = self.points[1]; return p[1], p[2], p[3], p[4], p[5] end
 function Frame:SetScale(s) self.scale = s end
-function Frame:SetScript(name, fn) self.scripts[name] = fn end
+-- Newer clients switch mouse input on when a mouse script is set, so the
+-- stand-in does the same. A frame that has it on and is shown catches clicks.
+local MOUSE_SCRIPTS = { OnMouseDown = true, OnMouseUp = true, OnEnter = true, OnLeave = true, OnClick = true }
+function Frame:SetScript(name, fn)
+    self.scripts[name] = fn
+    if fn and MOUSE_SCRIPTS[name] then self.mouse = true end
+end
 function Frame:HookScript(name, fn)
     local old = self.scripts[name]
     self.scripts[name] = function(...) if old then old(...) end fn(...) end
+    if MOUSE_SCRIPTS[name] then self.mouse = true end
+end
+function Frame:SetAllPoints() end
+function Frame:IsVisible()
+    local f = self
+    while f do
+        if f.shown == false then return false end
+        f = f.parent
+    end
+    return true
 end
 function Frame:RegisterEvent(e) self.events[e] = true end
 function Frame:UnregisterEvent(e) self.events[e] = nil end
@@ -44,7 +60,11 @@ function Frame:StopMovingOrSizing()
 end
 function Frame:SetUserPlaced() end
 function Frame:Show() self.shown = true; if self.scripts.OnShow then self.scripts.OnShow(self) end end
-function Frame:Hide() self.shown = false end
+function Frame:Hide()
+    local was = self.shown ~= false
+    self.shown = false
+    if was and self.scripts.OnHide then self.scripts.OnHide(self) end
+end
 function Frame:CreateTexture()
     return { SetAllPoints = function() end, SetColorTexture = function() end,
              Show = function(t) t.shown = true end, Hide = function(t) t.shown = false end }
@@ -54,13 +74,24 @@ function Frame:CreateFontString()
              Show = function() end, Hide = function() end }
 end
 
-local function NewFrame(name)
-    local f = setmetatable({ scripts = {}, events = {}, points = {}, name = name }, Frame)
+local function NewFrame(name, parent)
+    local f = setmetatable({ scripts = {}, events = {}, points = {}, children = {}, name = name, parent = parent }, Frame)
     if name then _G[name] = f end
+    if parent then table.insert(parent.children, f) end
     return f
 end
 
-function CreateFrame(_, name) return NewFrame(name) end
+function CreateFrame(_, name, parent) return NewFrame(name, parent) end
+
+-- True if a frame from the addon is shown and would catch a click.
+function AddonCatchesClicks()
+    local function walk(f)
+        if f.mouse and f:IsVisible() then return true end
+        for _, c in ipairs(f.children) do if walk(c) then return true end end
+        return false
+    end
+    return walk(CamelusMovableRollFrameAnchor)
+end
 
 -- WoW's hooksecurefunc(table, "method", fn): call the original, then fn.
 function hooksecurefunc(t, method, fn)
@@ -125,6 +156,7 @@ db = g.CamelusMovableRollFrameDB
 check("saved variables get defaults", db.point == "BOTTOM" and db.y == 200 and db.scale == 1)
 
 lua.execute('FireEvent("PLAYER_LOGIN")')
+check("locked after login: nothing from the addon catches clicks", lua.eval("AddonCatchesClicks()") is False)
 check("anchor placed at saved spot",
       lua.eval('CamelusMovableRollFrameAnchor.points[1][1] == "BOTTOM" and CamelusMovableRollFrameAnchor.points[1][5] == 200'))
 check("anchor sized like roll frame and its slot", anchor.w == 277 and anchor.h == 100)
@@ -155,12 +187,14 @@ lua.execute('SlashCmdList.CAMELUSMOVABLEROLLFRAME("scale 5")')
 check("out-of-range scale refused", db.scale == 1.5)
 
 # Unlock / lock with the drag box.
+check("the anchor itself has no mouse scripts", anchor.scripts.OnMouseDown is None and anchor.mouse is None)
 lua.execute('SlashCmdList.CAMELUSMOVABLEROLLFRAME("")')
-check("/rollmove unlocks (box takes the mouse)", anchor.mouse is True)
-lua.execute('CamelusMovableRollFrameAnchor.scripts.OnMouseDown(CamelusMovableRollFrameAnchor, "LeftButton")')
+check("/rollmove unlocks (blue box shown and takes the mouse)", lua.eval("AddonCatchesClicks()") is True)
+lua.execute('local m = CamelusMovableRollFrameAnchor.children[1]; m.scripts.OnMouseDown(m, "LeftButton")')
 check("unlocked box can be dragged without shift", anchor.moving is True)
 lua.execute('SlashCmdList.CAMELUSMOVABLEROLLFRAME("")')
-check("/rollmove again locks and finishes the drag", anchor.mouse is False and anchor.moving is False)
+check("/rollmove again locks and finishes the drag", anchor.moving is False)
+check("locked again: nothing from the addon catches clicks", lua.eval("AddonCatchesClicks()") is False)
 
 lua.execute('SlashCmdList.CAMELUSMOVABLEROLLFRAME("reset")')
 check("reset restores spot and size",

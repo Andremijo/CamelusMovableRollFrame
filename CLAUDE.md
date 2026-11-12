@@ -21,7 +21,7 @@ World of Warcraft addon for **WoW Forever** that makes the Need/Greed roll windo
 - An own anchor frame (`CamelusMovableRollFrameAnchor`) is what the player moves. A `hooksecurefunc(GroupLootContainer, "SetPoint", ...)` pins the container back to the anchor every time Blizzard places it.
 - Scale is applied to each `GroupLootFrameN` (they are not children of the container) and to the container. The anchor is resized, not scaled, so its saved position doesn't shift.
 - **Taint:** never write fields on Blizzard frames and never replace Blizzard functions. Only `hooksecurefunc`, `HookScript` and method calls.
-- **Never let a hidden-looking frame catch clicks.** In 1.1 the anchor had mouse scripts. In the modern client, setting a mouse script turns mouse input on, so the invisible anchor (strata DIALOG) swallowed clicks on whatever was under it, such as the trade window's Trade button. Since 1.2 the anchor has no mouse scripts. The blue drag box is a separate child frame (`mover`) that is hidden while locked. `tests/test_addon.py` checks this (`AddonCatchesClicks`).
+- **Never let a hidden-looking frame catch clicks.** In 1.1 the anchor had mouse scripts. The likely cause of the owner's report (the trade window's Trade button stopped working): setting a mouse script turns mouse input on in the modern client, so the invisible anchor (strata DIALOG) swallowed clicks on whatever was under it. Not confirmed in the game yet. Since 1.2 the anchor has no mouse scripts. The blue drag box is a separate child frame (`mover`) that is hidden while locked. `tests/test_addon.py` checks this (`AddonCatchesClicks`).
 
 ## Files
 - `CamelusMovableRollFrame.toc`: `## Version:` is the single source of the version number.

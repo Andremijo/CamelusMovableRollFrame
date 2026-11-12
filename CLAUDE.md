@@ -28,7 +28,7 @@ World of Warcraft addon for **WoW Forever** that makes the Need/Greed roll windo
 - `CamelusMovableRollFrame.lua`: all the code.
 - `CamelusMovableRollFrame.tga`: the addon icon (64×64, uncompressed 32-bit TGA). Regenerate with `python3 media/make_icon.py <out_dir>` (Pillow). `media/icon.png` is its `preview_256.png`, used in the README.
 - `tests/test_addon.py`: runs the addon in Lua 5.1 (`pip install lupa`) with stand-in frames. Run it after every change: `python3 tests/test_addon.py`.
-- `.github/workflows/release.yml`: on every push to `main`, creates release `v<Version>` if it doesn't exist yet, with `CamelusMovableRollFrame-Forever.zip` (the owner wants this exact name) and `release.json` (flavor `forever`, for WoWUp).
+- `.github/workflows/release.yml`: on every push to `main`, creates release `v<Version>` if it doesn't exist yet, with `CamelusMovableRollFrame-v<Version>-Forever.zip` and `release.json` (flavor `forever`, for WoWUp). The owner wants the name to end in `-Forever`. **The version must stay in the file name:** WoWUp's GitHub provider uses the asset file name as the version and only sees an update when it changes. Releases 1.0–1.2 were all called `CamelusMovableRollFrame-Forever.zip`, so WoWUp never offered updates.
 
 ## Releasing
 Bump `## Version:` in the `.toc` and push to `main`. The workflow does the rest. Pushing tags from a Claude session is refused by the git proxy, so don't try. The workflow can also be started with `workflow_dispatch`.

@@ -6,12 +6,16 @@ A small addon for **WoW Forever** that makes the Need / Greed / Pass roll window
 
 ## Install
 
-1. Go to [Releases](../../releases/latest) and download **CamelusMovableRollFrame-Forever.zip**.
+1. Go to [Releases](../../releases/latest) and download **CamelusMovableRollFrame-vX.Y-Forever.zip** (for example `CamelusMovableRollFrame-v1.3-Forever.zip`).
 2. Unzip it into your game's `Interface\AddOns\` folder, so you get
    `Interface\AddOns\CamelusMovableRollFrame\CamelusMovableRollFrame.toc`.
 3. Restart the game and make sure "Camelus' Movable Roll Frame" is ticked in the AddOns list.
 
 (If you use Code → Download ZIP instead, rename the folder from `CamelusMovableRollFrame-main` to `CamelusMovableRollFrame`. WoW only loads the addon if the folder name matches the `.toc` file.)
+
+## WoWUp
+
+In WoWUp, choose "Install from URL" and paste `https://github.com/Andremijo/CamelusMovableRollFrame`. WoWUp then shows new versions as updates.
 
 ## Use
 
@@ -30,6 +34,6 @@ Loot toasts ("You received ...") that appear while a roll is up stack above the 
 ## Making a new release
 
 1. Change `## Version:` in `CamelusMovableRollFrame.toc`, for example to `1.2`, and push to `main`.
-2. A minute later, GitHub has created release `v1.2` with `CamelusMovableRollFrame-Forever.zip` and `release.json` attached.
+2. A minute later, GitHub has created release `v1.2` with `CamelusMovableRollFrame-v1.2-Forever.zip` and `release.json` attached.
 
 Pushes that don't change the version don't create a release.

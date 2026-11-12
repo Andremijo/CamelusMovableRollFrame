@@ -1,7 +1,7 @@
 ## Interface: 16001
 ## Title: Camelus' Movable Roll Frame
 ## Notes: Makes the Need/Greed roll window movable. Type /rollmove to move it.
-## Version: 1.2
+## Version: 1.3
 ## IconTexture: Interface\AddOns\CamelusMovableRollFrame\CamelusMovableRollFrame
 ## SavedVariables: CamelusMovableRollFrameDB
 
